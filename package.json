@@ -1,0 +1,20 @@
+{
+  "name": "Accepted",
+  "version": "0.0.1",
+  "main": "server.js",
+  "repository": "https://github.com/lrf141/Accepted",
+  "author": "lrf141 <ghost141.kentyo@gmail.com>",
+  "license": "MIT",
+  "engines": {
+    "node": "^10.10.0"
+  },
+  "devDependencies": {
+    "babel-eslint": "^10.0.1",
+    "eslint": "^5.9.0",
+    "eslint-plugin-import": "^2.14.0"
+  },
+  "scripts": {
+    "eslint": "eslint ./",
+    "eslint:fix": "eslint --fix ./"
+  }
+}
