@@ -16,5 +16,10 @@
   "scripts": {
     "eslint": "eslint ./",
     "eslint:fix": "eslint --fix ./"
+  },
+  "dependencies": {
+    "dockerode": "^2.5.7",
+    "ioredis": "^4.2.0",
+    "socket.io": "^2.2.0"
   }
 }
