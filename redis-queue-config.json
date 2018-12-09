@@ -1,0 +1,4 @@
+{
+    "waitQueue": "waiting-queue",
+    "runQueue": "running-queue"
+}
