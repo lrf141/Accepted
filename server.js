@@ -4,6 +4,7 @@ const Url = require('url');
 const Query = require('querystring');
 const Fs = require('fs');
 const Tmp = require('tmp');
+const Docker = require('dockerode');
 const Colors = require('colors/safe');
 
 
@@ -13,6 +14,9 @@ const queueConfig = require('./redis-queue-config.json');
 const redis = new Redis(redisConfig);
 const sub = new Redis(redisConfig);
 const pub = new Redis(redisConfig);
+
+//docker config
+const docker = new Docker({socketPath: '/var/run/docker.sock'});
 
 // start redis subscribe channel
 sub.subscribe('waiting-queue-event', 'processing-queue-event', (err, count) => {
@@ -29,7 +33,12 @@ const proxyPort = process.env.ACCEPTED_PORT || 9000;
 const defaultHeader = require('./default-http-header.json');
 
 
-const getFromClient = (request, response) => {
+// docker container status api
+const getDockerContainerLists = async () => {
+    return await docker.listContainers({"filters":{"name":["redis"]}});
+};
+
+const getFromClient = async (request, response) => {
 
 	let urlParts = Url.parse(request.url, true);
 	switch(urlParts.pathname){
@@ -54,7 +63,7 @@ const getFromClient = (request, response) => {
 				if (jsonData.xid && jsonData.code) {
 					Fs.writeFileSync('./examples/' + jsonData.xid + '.py', jsonData.code);
                         
-					//add error handler
+					// TODO:add error handler
 					pub.pipeline().publish('waiting-queue-event', JSON.stringify({'event': 'add', 'id': jsonData.xid, 'code': jsonData.code})).exec();
 					redis.pipeline().rpush('waitQueue', jsonData.xid+'.py').exec();
                         
@@ -67,9 +76,31 @@ const getFromClient = (request, response) => {
 			});
 		} else {
 			response.writeHead(405, defaultHeader);
-			response.end(JSON.stringify({'status': 'Method Not Allowed..'}));
+			response.end(JSON.stringify({'status': 'Method Not Allowed.'}));
 		}
 		break;
+
+    case '/containers':
+        if (request.method === 'GET') {
+            const containersJson = await getDockerContainerLists();
+            response.writeHead(200, defaultHeader);
+            response.end(JSON.stringify(containersJson));
+        } else {
+            response.writeHead(405, defaultHeader);
+            response.end(JSON.stringify({'status': 'Method Not Allowed.'}));
+        }
+        break;
+
+    case '/status':
+        if (request.method === 'GET'){
+            response.writeHead(200, defaultHeader);
+            response.end(JSON.stringify({'status': 'success'})); 
+        } else {
+            response.writeHead(405, defaultHeader);
+            response.end(JSON.stringify({'status': 'Method Not Allowed.'}));
+        }
+        break;
+
 
 	default:
 		response.writeHead(404, defaultHeader);
