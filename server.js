@@ -35,7 +35,7 @@ const defaultHeader = require('./default-http-header.json');
 
 // docker container status api
 const getDockerContainerLists = async () => {
-    return await docker.listContainers({"filters":{"name":["redis"]}});
+    return await docker.listContainers({"filters":{"name":["learning"]}});
 };
 
 const getFromClient = async (request, response) => {
@@ -64,7 +64,7 @@ const getFromClient = async (request, response) => {
 					Fs.writeFileSync('./examples/' + jsonData.xid + '.py', jsonData.code);
                         
 					// TODO:add error handler
-					pub.pipeline().publish('waiting-queue-event', JSON.stringify({'event': 'add', 'id': jsonData.xid, 'code': jsonData.code})).exec();
+					pub.pipeline().publish('waiting-queue-event', JSON.stringify({'event': 'add', 'id': jsonData.xid).exec();
 					redis.pipeline().rpush('waitQueue', jsonData.xid+'.py').exec();
                         
 					response.writeHead(200, defaultHeader);
