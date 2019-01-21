@@ -1,6 +1,24 @@
 const Redis = require('ioredis');
 const Docker = require('dockerode');
 const Stream = require('stream');
+const IO = require('socket.io');
+
+//socket.io init
+const io = IO.listen(8000);
+let store = {};
+io.on('connection', (socket) => {
+    socket.on('join', (msg) => {
+        usrobj = {
+            'xid': msg.xid
+        };
+        store[msg.xid] = usrobj;
+        socket.join(msg.xid);
+    });
+
+    socket.on('process message', (msg) => {
+        io.to(store[msg.xid].xid).emit('process message', msg.body);
+    });
+});
 
 //Docker init
 const docker = new Docker({
@@ -44,7 +62,7 @@ sub.on('message', (channel, message) => {
 			//Image: '',
 			//Cmd: ['python', message]
 			Image: 'ubuntu',
-			Cmd: ['/bin/bash', 'echo "hello,world"']
+			Cmd: ['/bin/bash', '-c', 'yes "hello"']
 		}, (err, container) => {
 			container.start({}, (err, data) => {
 				containerLogs(container);
@@ -74,6 +92,7 @@ const containerLogs = (container) => {
 		container.modem.demuxStream(stream, logStream, logStream);
 		stream.on('end', () => {
 			//add websocket function
+            //and add process next step from waiting queue
 			console.log('stop');
 			logStream.end('!stop!');    
 		});
