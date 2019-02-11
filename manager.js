@@ -7,12 +7,15 @@ const IO = require('socket.io');
 const io = IO.listen(8000);
 let store = {};
 io.on('connection', (socket) => {
-    socket.on('join', (msg) => {
+    console.log('connect');
+    socket.on('register', (msg) => {
         usrobj = {
             'xid': msg.xid
         };
         store[msg.xid] = usrobj;
         socket.join(msg.xid);
+        console.log('connection accept');
+        console.log('xid: ' + msg.xid);
     });
 
     socket.on('process message', (msg) => {
@@ -48,9 +51,10 @@ sub.on('message', (channel, message) => {
 	switch (channel) {
 	case 'waiting-queue-event':
 		waiting += 1;
+
 		if (processing < maxProcessing) {
 			waiting -= 1;
-			const nextTask = redis.pipline.lpop('waitQueue');
+			const nextTask = redis.pipeline().lpop('waitQueue');
 			pub.publish('processing-queue-event', nextTask);
 		}
 		break;
@@ -60,12 +64,12 @@ sub.on('message', (channel, message) => {
 		//create and run container
 		docker.createContainer({
 			//Image: '',
-			//Cmd: ['python', message]
+			//Cmd: ['python', message+'.py']
 			Image: 'ubuntu',
 			Cmd: ['/bin/bash', '-c', 'yes "hello"']
 		}, (err, container) => {
 			container.start({}, (err, data) => {
-				containerLogs(container);
+				containerLogs(container, message);
 			});
 		});
 
@@ -74,10 +78,14 @@ sub.on('message', (channel, message) => {
 	}
 });
 
-const containerLogs = (container) => {
+const containerLogs = (container, transaction) => {
 	const logStream = new Stream.PassThrough();
 	logStream.on('data', (chunk) => {
 		//add websocket function
+        io.emit('process message', {
+            xid: transaction,
+            body: chunck.toString('utf8')
+        });
 		console.log(chunk.toString('utf8'));
 	});
 
@@ -92,7 +100,7 @@ const containerLogs = (container) => {
 		container.modem.demuxStream(stream, logStream, logStream);
 		stream.on('end', () => {
 			//add websocket function
-            //and add process next step from waiting queue
+            //and add process next step from waiting queu
 			console.log('stop');
 			logStream.end('!stop!');    
 		});
