@@ -67,3 +67,6 @@ redis-data
 
 #ignore lock file
 *.lock
+
+
+./examples/

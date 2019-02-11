@@ -7,20 +7,21 @@ const IO = require('socket.io');
 const io = IO.listen(8000);
 let store = {};
 io.on('connection', (socket) => {
-    console.log('connect');
-    socket.on('register', (msg) => {
-        usrobj = {
-            'xid': msg.xid
-        };
-        store[msg.xid] = usrobj;
-        socket.join(msg.xid);
-        console.log('connection accept');
-        console.log('xid: ' + msg.xid);
-    });
+	console.log('connect');
+	socket.on('register', (msg) => {
+		usrobj = {
+			'xid': msg.xid
+		};
+		store[msg.xid] = usrobj;
+		socket.join(msg.xid);
+		console.log('connection accept');
+		console.log('xid: ' + msg.xid);
+        console.log(store);
+	});
 
-    socket.on('process message', (msg) => {
-        io.to(store[msg.xid].xid).emit('process message', msg.body);
-    });
+	socket.on('process-message', (msg) => {
+		io.to(store[msg.xid].xid).emit('process-message', msg.body);
+	});
 });
 
 //Docker init
@@ -47,20 +48,23 @@ sub.subscribe('waiting-queue-event', 'processing-queue-event', (err, count) => {
 });
 
 sub.on('message', (channel, message) => {
-    
+   
+    console.log("Receive %s, %s", channel, message); 
 	switch (channel) {
 	case 'waiting-queue-event':
 		waiting += 1;
 
 		if (processing < maxProcessing) {
 			waiting -= 1;
-			const nextTask = redis.pipeline().lpop('waitQueue');
-			pub.publish('processing-queue-event', nextTask);
+			redis.pipeline().lpop('waitQueue').exec().then((result) => {
+			    pub.publish('processing-queue-event', result[0][1]);
+                console.log(result[0]);
+            });
+			//pub.publish('processing-queue-event', nextTask);
 		}
 		break;
 
 	case 'processing-queue-event':
-
 		//create and run container
 		docker.createContainer({
 			//Image: '',
@@ -79,14 +83,15 @@ sub.on('message', (channel, message) => {
 });
 
 const containerLogs = (container, transaction) => {
+    console.log('docker container xid:' + transaction);
 	const logStream = new Stream.PassThrough();
 	logStream.on('data', (chunk) => {
 		//add websocket function
-        io.emit('process message', {
-            xid: transaction,
-            body: chunck.toString('utf8')
-        });
-		console.log(chunk.toString('utf8'));
+		io.emit('process-message', {
+			xid: transaction,
+			body: chunk.toString('utf8')
+		});
+        //io.emit('process', chunk.toString('utf8'));
 	});
 
 	container.logs({
@@ -100,7 +105,7 @@ const containerLogs = (container, transaction) => {
 		container.modem.demuxStream(stream, logStream, logStream);
 		stream.on('end', () => {
 			//add websocket function
-            //and add process next step from waiting queu
+			//and add process next step from waiting queu
 			console.log('stop');
 			logStream.end('!stop!');    
 		});
