@@ -26,7 +26,7 @@ sub.subscribe('waiting-queue-event', 'processing-queue-event', (err, count) => {
 });
 
 // server config
-const proxyPort = process.env.ACCEPTED_PORT || 9000;
+const proxyPort = process.env.ACCEPTED_PORT || 9001;
 
 
 // http condfig
@@ -59,15 +59,16 @@ const getFromClient = async (request, response) => {
 			});
 
 			request.on('end', () => {
+                console.log("hello");
 				const jsonData = JSON.parse(data);
 				if (jsonData.xid && jsonData.code) {
 					Fs.writeFileSync('./examples/' + jsonData.xid + '.py', jsonData.code);
                         
 					// TODO:add error handler
-					pub.pipeline().publish('waiting-queue-event', JSON.stringify({'event': 'add', 'id': jsonData.xid).exec();
-					redis.pipeline().rpush('waitQueue', jsonData.xid+'.py').exec();
+					pub.pipeline().publish('waiting-queue-event', JSON.stringify({'event': 'add', 'id': jsonData.xid})).exec();
+					redis.pipeline().rpush('waitQueue', jsonData.xid).exec();
                         
-					response.writeHead(200, defaultHeader);
+					//response.writeHead(200, defaultHeader);
 					response.end(JSON.stringify({'status': 'success'}));
 				} else {
 					response.writeHead(400, defaultHeader);
