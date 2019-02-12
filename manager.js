@@ -60,18 +60,22 @@ sub.on('message', (channel, message) => {
 			    pub.publish('processing-queue-event', result[0][1]);
                 console.log(result[0]);
             });
-			//pub.publish('processing-queue-event', nextTask);
 		}
 		break;
 
 	case 'processing-queue-event':
 		//create and run container
 		docker.createContainer({
-			//Image: '',
-			//Cmd: ['python', message+'.py']
-			Image: 'ubuntu',
-			Cmd: ['/bin/bash', '-c', 'yes "hello"']
+			Image: 'python',
+			Cmd: ['python', '/src/'+message+'.py'],
+            'Volumes': {
+                '/src': {}
+            },
+            'HostConfig': {
+                'Binds': [ __dirname+'/examples:/src']
+            }
 		}, (err, container) => {
+            console.log(err);
 			container.start({}, (err, data) => {
 				containerLogs(container, message);
 			});
@@ -91,7 +95,7 @@ const containerLogs = (container, transaction) => {
 			xid: transaction,
 			body: chunk.toString('utf8')
 		});
-        //io.emit('process', chunk.toString('utf8'));
+        console.log(chunk.toString('utf8'));
 	});
 
 	container.logs({
