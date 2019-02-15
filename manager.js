@@ -9,7 +9,7 @@ let store = {};
 io.on('connection', (socket) => {
 	console.log('connect');
 	socket.on('register', (msg) => {
-		usrobj = {
+		const usrobj = {
 			'xid': msg.xid
 		};
 		store[msg.xid] = usrobj;
@@ -17,6 +17,7 @@ io.on('connection', (socket) => {
 		console.log('connection accept');
 		console.log('xid: ' + msg.xid);
         console.log(store);
+        io.to(store[msg.xid].xid).emit('process-message', {xid: msg.xid, body: 'process start'});
 	});
 
 	socket.on('process-message', (msg) => {
@@ -41,7 +42,7 @@ let processing = 0;
 const maxProcessing = 4;
 
 //start redus subscribe
-sub.subscribe('waiting-queue-event', 'processing-queue-event', (err, count) => {
+sub.subscribe('waiting-queue-event', 'processing-queue-event', 'next-process-event', (err, count) => {
 	if (err) {
 		console.log(err);
 	}
@@ -84,6 +85,16 @@ sub.on('message', (channel, message) => {
 
 		processing += 1;
 		break;
+        
+    case 'next-process-event':
+
+        processing -= 1;
+        redis.pipeline().lpop('waitQueue').exec().then((result) => {
+            if (result[0][1] != null) {
+                pub.publish('processing-queue-event', result[0][1]);
+            }
+        });
+        break;
 	}
 });
 
@@ -109,11 +120,9 @@ const containerLogs = (container, transaction) => {
 		}
 		container.modem.demuxStream(stream, logStream, logStream);
 		stream.on('end', () => {
-			//add websocket function
 			//and add process next step from waiting queue
-            processing -= 1;
-			console.log('stop');
-			logStream.end('!stop!');    
+            pub.publish('next-process-event', 'next process start');
+			logStream.end('process finish');    
 		});
 	});
 };

@@ -68,5 +68,5 @@ redis-data
 #ignore lock file
 *.lock
 
-
-./examples/
+#python temp code dir
+examples/
