@@ -17,7 +17,6 @@ io.on('connection', (socket) => {
 		console.log('connection accept');
 		console.log('xid: ' + msg.xid);
 		console.log(store);
-		io.to(store[msg.xid].xid).emit('process-message', {xid: msg.xid, body: 'process start'});
 	});
 
 	socket.on('process-message', (msg) => {
@@ -36,6 +35,7 @@ const redis = new Redis(redisConfig);
 const sub = new Redis(redisConfig);
 const pub = new Redis(redisConfig);
 
+let waiting = 0;
 let processing = 0;
 const maxProcessing = 4;
 
