@@ -16,8 +16,8 @@ io.on('connection', (socket) => {
 		socket.join(msg.xid);
 		console.log('connection accept');
 		console.log('xid: ' + msg.xid);
-        console.log(store);
-        io.to(store[msg.xid].xid).emit('process-message', {xid: msg.xid, body: 'process start'});
+		console.log(store);
+		io.to(store[msg.xid].xid).emit('process-message', {xid: msg.xid, body: 'process start'});
 	});
 
 	socket.on('process-message', (msg) => {
@@ -50,7 +50,7 @@ sub.subscribe('waiting-queue-event', 'processing-queue-event', 'next-process-eve
 
 sub.on('message', (channel, message) => {
    
-    console.log("Receive %s, %s", channel, message); 
+	console.log('Receive %s, %s', channel, message); 
 	switch (channel) {
 	case 'waiting-queue-event':
 		waiting += 1;
@@ -59,8 +59,8 @@ sub.on('message', (channel, message) => {
 			waiting -= 1;
 			redis.pipeline().lpop('waitQueue').exec().then((result) => {
 			    pub.publish('processing-queue-event', result[0][1]);
-                console.log(result[0]);
-            });
+				console.log(result[0]);
+			});
 		}
 		break;
 
@@ -69,15 +69,15 @@ sub.on('message', (channel, message) => {
 		docker.createContainer({
 			Image: 'gw000/keras-full',
 			Cmd: ['python', '/src/'+message+'.py'],
-            'Volumes': {
-                '/src': {}
-            },
-            'HostConfig': {
-                'Binds': [ __dirname+'/examples:/src']
-            },
-            "DefaultRuntime": "nvidia"
+			'Volumes': {
+				'/src': {}
+			},
+			'HostConfig': {
+				'Binds': [ __dirname+'/examples:/src']
+			},
+			'DefaultRuntime': 'nvidia'
 		}, (err, container) => {
-            console.log(err);
+			console.log(err);
 			container.start({}, (err, data) => {
 				containerLogs(container, message);
 			});
@@ -86,20 +86,20 @@ sub.on('message', (channel, message) => {
 		processing += 1;
 		break;
         
-    case 'next-process-event':
+	case 'next-process-event':
 
-        processing -= 1;
-        redis.pipeline().lpop('waitQueue').exec().then((result) => {
-            if (result[0][1] != null) {
-                pub.publish('processing-queue-event', result[0][1]);
-            }
-        });
-        break;
+		processing -= 1;
+		redis.pipeline().lpop('waitQueue').exec().then((result) => {
+			if (result[0][1] != null) {
+				pub.publish('processing-queue-event', result[0][1]);
+			}
+		});
+		break;
 	}
 });
 
 const containerLogs = (container, transaction) => {
-    console.log('docker container xid:' + transaction);
+	console.log('docker container xid:' + transaction);
 	const logStream = new Stream.PassThrough();
 	logStream.on('data', (chunk) => {
 		//add websocket function
@@ -107,7 +107,7 @@ const containerLogs = (container, transaction) => {
 			xid: transaction,
 			body: chunk.toString('utf8')
 		});
-        console.log(chunk.toString('utf8'));
+		console.log(chunk.toString('utf8'));
 	});
 
 	container.logs({
@@ -121,7 +121,7 @@ const containerLogs = (container, transaction) => {
 		container.modem.demuxStream(stream, logStream, logStream);
 		stream.on('end', () => {
 			//and add process next step from waiting queue
-            pub.publish('next-process-event', 'next process start');
+			pub.publish('next-process-event', 'next process start');
 			logStream.end('process finish');    
 		});
 	});
