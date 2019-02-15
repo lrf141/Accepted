@@ -32,19 +32,17 @@ const docker = new Docker({
 
 //redis init
 const redisConfig = require('./redis-config.json');
-const queueConfig = require('./redis-queue-config.json');
 const redis = new Redis(redisConfig);
 const sub = new Redis(redisConfig);
 const pub = new Redis(redisConfig);
 
-let waiting = 0;
 let processing = 0;
 const maxProcessing = 4;
 
 //start redus subscribe
 sub.subscribe('waiting-queue-event', 'processing-queue-event', 'next-process-event', (err, count) => {
 	if (err) {
-		console.log(err);
+		console.log(err+':'+count);
 	}
 });
 

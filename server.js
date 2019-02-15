@@ -1,9 +1,7 @@
 const Http = require('http');
 const Redis = require('ioredis');
 const Url = require('url');
-const Query = require('querystring');
 const Fs = require('fs');
-const Tmp = require('tmp');
 const Docker = require('dockerode');
 const Colors = require('colors/safe');
 
@@ -14,14 +12,11 @@ const redis = new Redis(redisConfig);
 const sub = new Redis(redisConfig);
 const pub = new Redis(redisConfig);
 
-//docker config
-const docker = new Docker({socketPath: '/var/run/docker.sock'});
-
 // start redis subscribe channel
 sub.subscribe('waiting-queue-event', 'processing-queue-event', (err, count) => {
 	// no event
-    if(err)
-        console.log(err);
+	if(err)
+		console.log(err+':'+count);
 });
 
 // server config
@@ -32,7 +27,7 @@ const proxyPort = process.env.ACCEPTED_PORT || 9001;
 const defaultHeader = require('./default-http-header.json');
 
 
-const getFromClient = async (request, response) => {
+const getFromClient = (request, response) => {
 
 	let urlParts = Url.parse(request.url, true);
 	switch(urlParts.pathname){
@@ -53,7 +48,7 @@ const getFromClient = async (request, response) => {
 			});
 
 			request.on('end', () => {
-                console.log("hello");
+				console.log('hello');
 				const jsonData = JSON.parse(data);
 				if (jsonData.xid && jsonData.code) {
 					Fs.writeFileSync('./examples/' + jsonData.xid + '.py', jsonData.code);
