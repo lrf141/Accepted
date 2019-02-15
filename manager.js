@@ -2,6 +2,7 @@ const Redis = require('ioredis');
 const Docker = require('dockerode');
 const Stream = require('stream');
 const IO = require('socket.io');
+const Fs = require('fs');
 
 //socket.io init
 const io = IO.listen(8000);
@@ -119,6 +120,10 @@ const containerLogs = (container, transaction) => {
 		container.modem.demuxStream(stream, logStream, logStream);
 		stream.on('end', () => {
 			//and add process next step from waiting queue
+            Fs.unlink('examples/'+transaction+'.py', (err) => {
+                if (err) 
+                    console.log(err);
+            });
 			pub.publish('next-process-event', 'next process start');
 			logStream.end('process finish');    
 		});
