@@ -73,7 +73,8 @@ sub.on('message', (channel, message) => {
             },
             'HostConfig': {
                 'Binds': [ __dirname+'/examples:/src']
-            }
+            },
+            "DefaultRuntime": "nvidia"
 		}, (err, container) => {
             console.log(err);
 			container.start({}, (err, data) => {
