@@ -10,7 +10,6 @@ const Colors = require('colors/safe');
 
 // redis config
 const redisConfig = require('./redis-config.json');
-const queueConfig = require('./redis-queue-config.json');
 const redis = new Redis(redisConfig);
 const sub = new Redis(redisConfig);
 const pub = new Redis(redisConfig);
@@ -32,11 +31,6 @@ const proxyPort = process.env.ACCEPTED_PORT || 9001;
 // http condfig
 const defaultHeader = require('./default-http-header.json');
 
-
-// docker container status api
-const getDockerContainerLists = async () => {
-    return await docker.listContainers({"filters":{"name":["learning"]}});
-};
 
 const getFromClient = async (request, response) => {
 
@@ -80,28 +74,6 @@ const getFromClient = async (request, response) => {
 			response.end(JSON.stringify({'status': 'Method Not Allowed.'}));
 		}
 		break;
-
-    case '/containers':
-        if (request.method === 'GET') {
-            const containersJson = await getDockerContainerLists();
-            response.writeHead(200, defaultHeader);
-            response.end(JSON.stringify(containersJson));
-        } else {
-            response.writeHead(405, defaultHeader);
-            response.end(JSON.stringify({'status': 'Method Not Allowed.'}));
-        }
-        break;
-
-    case '/status':
-        if (request.method === 'GET'){
-            response.writeHead(200, defaultHeader);
-            response.end(JSON.stringify({'status': 'success'})); 
-        } else {
-            response.writeHead(405, defaultHeader);
-            response.end(JSON.stringify({'status': 'Method Not Allowed.'}));
-        }
-        break;
-
 
 	default:
 		response.writeHead(404, defaultHeader);
