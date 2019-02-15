@@ -66,7 +66,7 @@ sub.on('message', (channel, message) => {
 	case 'processing-queue-event':
 		//create and run container
 		docker.createContainer({
-			Image: 'python',
+			Image: 'gw000/keras-full',
 			Cmd: ['python', '/src/'+message+'.py'],
             'Volumes': {
                 '/src': {}
@@ -109,7 +109,8 @@ const containerLogs = (container, transaction) => {
 		container.modem.demuxStream(stream, logStream, logStream);
 		stream.on('end', () => {
 			//add websocket function
-			//and add process next step from waiting queu
+			//and add process next step from waiting queue
+            processing -= 1;
 			console.log('stop');
 			logStream.end('!stop!');    
 		});
