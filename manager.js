@@ -3,6 +3,7 @@ const Docker = require('dockerode');
 const Stream = require('stream');
 const IO = require('socket.io');
 const Fs = require('fs');
+const Request = require('request');
 
 //socket.io init
 const io = IO.listen(8000);
@@ -98,8 +99,13 @@ sub.on('message', (channel, message) => {
 });
 
 const containerLogs = (container, transaction) => {
-	console.log('docker container xid:' + transaction);
-	const logStream = new Stream.PassThrough();
+	
+    console.log('docker container xid:' + transaction);
+
+    let loss = null;
+    let val_loss = null;
+	
+    const logStream = new Stream.PassThrough();
 	logStream.on('data', (chunk) => {
 		//add websocket function
 		io.emit('process-message', {
@@ -107,6 +113,14 @@ const containerLogs = (container, transaction) => {
 			body: chunk.toString('utf8')
 		});
 		console.log(chunk.toString('utf8'));
+
+        if (chunk.toString('utf8').match(/gb_loss:/)) {
+            loss = chunk.toString('utf8').split(':')[1];
+        }
+
+        if (chunk.toString('utf8').match(/gb_val_loss:/)) {
+            val_loss = chunk.toString('utf8').split(':')[1];
+        }
 	});
 
 	container.logs({
@@ -125,7 +139,26 @@ const containerLogs = (container, transaction) => {
                     console.log(err);
             });
 			pub.publish('next-process-event', 'next process start');
-			logStream.end('process finish');    
+			logStream.end('process finish');
+
+            const options = {
+                url: 'http://localhost/api/data',
+                method: 'POST',
+                json: true,
+                headers: {
+                    'Content-Type':'application/json'
+                },
+                form: {
+                    'xid': transaction,
+                    'loss': loss,
+                    'val_loss': val_loss
+                }
+            }
+
+            Request(options, (error, response, body) => {
+                console.log(body);
+                console.log(error)
+            });
 		});
 	});
 };
