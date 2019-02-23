@@ -1,0 +1,23 @@
+version: '3'
+
+services:
+
+    master:
+        image: redis:latest
+        ports:
+            - '6379:6379'
+        command: redis-server --appendonly yes
+
+    slave_1:
+        image: redis:latest
+        restart: always
+        ports:
+            - 3680:3679
+        command: redis-server --slaveof master 6379
+    
+    slave_2:
+        image: redis:latest
+        restart: always
+        ports:
+            - 3681:3679
+        command: redis-server --slaveof master 6379
